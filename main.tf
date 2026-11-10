@@ -62,18 +62,6 @@ resource "azurerm_network_security_group" "web" {
     source_address_prefix      = "10.${var.numgroupe}.2.0/24"
     destination_address_prefix = "*"
   }
-
-  security_rule {
-    name                       = "Deny-Other-Inbound"
-    priority                   = 4096
-    direction                  = "Inbound"
-    access                     = "Deny"
-    protocol                   = "*"
-    source_port_range          = "*"
-    destination_port_range     = "*"
-    source_address_prefix      = "*"
-    destination_address_prefix = "*"
-  }
 }
 
 resource "azurerm_network_security_group" "admin" {
@@ -91,18 +79,6 @@ resource "azurerm_network_security_group" "admin" {
     source_port_range          = "*"
     destination_port_range     = "22"
     source_address_prefix      = var.ip_autorisee
-    destination_address_prefix = "*"
-  }
-
-  security_rule {
-    name                       = "Deny-Other-Inbound"
-    priority                   = 4096
-    direction                  = "Inbound"
-    access                     = "Deny"
-    protocol                   = "*"
-    source_port_range          = "*"
-    destination_port_range     = "*"
-    source_address_prefix      = "*"
     destination_address_prefix = "*"
   }
 }
