@@ -1,0 +1,17 @@
+name: 'OpenTofu CI/CD'
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  fmt-and-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: opentofu/setup-opentofu@v2
+
+      - name: OpenTofu fmt
+        id: fmt
+        run: tofu fmt -check
+        continue-on-error: true

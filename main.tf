@@ -52,6 +52,18 @@ resource "azurerm_network_security_group" "web" {
   }
 
   security_rule {
+    name                       = "Allow-SSH-From-Admin"
+    priority                   = 120
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "22"
+    source_address_prefix      = "10.${var.numgroupe}.2.0/24"
+    destination_address_prefix = "*"
+  }
+
+  security_rule {
     name                       = "Deny-Other-Inbound"
     priority                   = 4096
     direction                  = "Inbound"
@@ -69,6 +81,30 @@ resource "azurerm_network_security_group" "admin" {
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
   tags                = local.tags
+
+  security_rule {
+    name                       = "Allow-SSH-From-My-IP"
+    priority                   = 100
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "22"
+    source_address_prefix      = var.ip_autorisee
+    destination_address_prefix = "*"
+  }
+
+  security_rule {
+    name                       = "Deny-Other-Inbound"
+    priority                   = 4096
+    direction                  = "Inbound"
+    access                     = "Deny"
+    protocol                   = "*"
+    source_port_range          = "*"
+    destination_port_range     = "*"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
 }
 
 resource "azurerm_subnet" "web" {
@@ -200,6 +236,57 @@ resource "azurerm_linux_virtual_machine" "web" {
   disable_password_authentication = true
   network_interface_ids           = [azurerm_network_interface.web[each.key].id]
   custom_data                     = base64encode(file("${path.module}/cloud-init.yml"))
+  tags                            = local.tags
+
+  admin_ssh_key {
+    username   = "azureuser"
+    public_key = file(pathexpand("~/.ssh/id_ed25519.pub"))
+  }
+
+  os_disk {
+    caching              = "ReadWrite"
+    storage_account_type = "StandardSSD_LRS"
+  }
+
+  source_image_reference {
+    publisher = "Canonical"
+    offer     = "ubuntu-24_04-lts"
+    sku       = "server"
+    version   = "latest"
+  }
+}
+
+resource "azurerm_public_ip" "jumpbox" {
+  name                = "pip-nimbus-${var.binome}-jumpbox"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  allocation_method   = "Static"
+  sku                 = "Standard"
+  tags                = local.tags
+}
+
+resource "azurerm_network_interface" "jumpbox" {
+  name                = "nic-nimbus-${var.binome}-jumpbox"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  tags                = local.tags
+
+  ip_configuration {
+    name                          = "ipconfig1"
+    subnet_id                     = azurerm_subnet.admin.id
+    private_ip_address_allocation = "Dynamic"
+    public_ip_address_id          = azurerm_public_ip.jumpbox.id
+  }
+}
+
+resource "azurerm_linux_virtual_machine" "jumpbox" {
+  name                            = "vm-nimbus-${var.binome}-jumpbox"
+  resource_group_name             = azurerm_resource_group.rg.name
+  location                        = azurerm_resource_group.rg.location
+  size                            = var.taille_vm
+  admin_username                  = "azureuser"
+  disable_password_authentication = true
+  network_interface_ids           = [azurerm_network_interface.jumpbox.id]
   tags                            = local.tags
 
   admin_ssh_key {

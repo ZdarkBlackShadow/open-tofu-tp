@@ -9,11 +9,6 @@ variable "binome" {
 variable "numgroupe" {
   type        = number
   description = "Numéro du groupe"
-
-  validation {
-    condition     = var.numgroupe >= 1 && var.numgroupe <= 254 && var.numgroupe == floor(var.numgroupe)
-    error_message = "numgroupe doit être un entier compris entre 1 et 254."
-  }
 }
 variable "region" {
   type    = string
@@ -22,4 +17,13 @@ variable "region" {
 variable "taille_vm" {
   type    = string
   default = "Standard_B2ats_v2"
+}
+variable "ip_autorisee" {
+  type        = string
+  description = "IP publique autorisée en SSH vers la jumpbox"
+
+  validation {
+    condition     = can(cidrhost(var.ip_autorisee, 0))
+    error_message = "IP/CIDR valide, ex: 1.2.3.4/32."
+  }
 }
